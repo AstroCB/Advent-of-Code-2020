@@ -1,1 +1,6 @@
 .vscode
+**/node_modules
+
+# TypeScript day
+day03/*.js
+day03/package*.json
