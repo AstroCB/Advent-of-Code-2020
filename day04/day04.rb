@@ -51,7 +51,7 @@ def validate(pairs)
     data = Set.new
     for pair in pairs.split do
         cat, val = pair.split(':')
-        return false unless $categories.include? cat
+        return false unless (yield cat, val)
 
         data.add(cat)
     end
@@ -60,12 +60,10 @@ def validate(pairs)
     return (diff == Set.new || diff == Set.new(['cid']))
 end
 
-def parse_passport(lines)
+def parse_passport(passports)
     num_valid = 0
-    lines.each do |line|
-        if validate(line) then
-            num_valid += 1
-        end
+    passports.each do |passport|
+        num_valid += 1 if validate(passport){ |cat| $categories.include? cat } 
     end
     return num_valid
 end
@@ -136,6 +134,49 @@ end
 # iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719
 # Count the number of valid passports - those that have all required fields and valid values. Continue to treat cid as optional. In your batch file, how many passports are valid?
 
+$validators = {
+    "byr" => /^(\d{4})$/,
+    "iyr" => /^(\d{4})$/,
+    "eyr" => /^(\d{4})$/,
+    "hgt" => /^(\d+)(cm|in)$/,
+    "hcl" => /^#[0-9a-f]{6}$/,
+    "ecl" => /^(amb|blu|brn|gry|grn|hzl|oth)$/,
+    "pid" => /^\d{9}$/
+}
+
+$ranges = {
+    "byr" => 1920..2002,
+    "iyr" => 2010..2020,
+    "eyr" => 2020..2030,
+    "hgtcm" => 150..193,
+    "hgtin" => 59..76
+}
+
+def parse_passport_v2(passports)
+    num_valid = 0
+    passports.each do |passport|
+        num_valid += 1 if validate(passport) { |cat, val|
+            next false unless $categories.include? cat
+
+            if $validators.key? cat then
+                next false unless $validators[cat].match(val)
+                
+                range_key = cat
+                if $2 then # need to specify in/cm if present
+                    range_key += $2
+                end
+
+                if $ranges.key? range_key then
+                    next false unless $ranges[range_key].cover? $1.to_i
+                end
+            end
+
+            next true
+        }
+    end
+    return num_valid
+end
+
 File.open("input.txt", "r") do |f|
     passports = []
     buffer = ""
@@ -149,6 +190,6 @@ File.open("input.txt", "r") do |f|
     end
     passports.push(buffer) unless buffer.empty?
 
-    puts passports[passports.length - 1]
     puts "Part 1: #{parse_passport(passports)}"
+    puts "Part 2: #{parse_passport_v2(passports)}"
 end
