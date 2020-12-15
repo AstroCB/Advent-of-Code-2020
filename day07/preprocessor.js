@@ -17,13 +17,14 @@ rules.forEach(line => {
     const secondaries = secondaryDesc.split(", ").map(desc => {
         if (desc == "no other bags.") return;
 
-        const [_, color] = desc.match(/\d+ (.+) bags?/);
-        return color;
+        const [_, num, color] = desc.match(/(\d+) (.+) bags?/);
+        return { num, color };
     }).filter(s => s);
 
     if (secondaries.length > 0) {
         fs.appendFileSync(output, `${primary}\n`);
-        secondaries.forEach(color => {
+        secondaries.forEach(({ num, color }) => {
+            fs.appendFileSync(output, `${num}\n`);
             fs.appendFileSync(output, `${color}\n`);
         });
         fs.appendFileSync(output, "\n");
