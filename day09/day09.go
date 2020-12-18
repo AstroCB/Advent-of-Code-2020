@@ -1,7 +1,7 @@
 package main
 
 import (
-    "fmt"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -55,7 +55,7 @@ import (
 // The first step of attacking the weakness in the XMAS data is to find the first number in the list (after the preamble) which is not the sum of two of the 25 numbers before it. What is the first number that does not have this property?
 
 func isValid(factors map[int]bool, num int) bool {
-	for factor, _ := range factors {
+	for factor := range factors {
 		complement := num - factor
 		if factors[complement] {
 			return true
@@ -79,10 +79,85 @@ func findInvalid(seq []int, size int) int {
 		}
 
 		// Shift bounds forward by 1
-		delete(factors, seq[i - size])
+		delete(factors, seq[i-size])
 		factors[n] = true
 	}
 	return -1
+}
+
+// --- Part Two ---
+
+// The final step in breaking the XMAS encryption relies on the invalid number you just found: you must find a contiguous set of at least two numbers in your list which sum to the invalid number from step 1.
+
+// Again consider the above example:
+
+// 35
+// 20
+// 15
+// 25
+// 47
+// 40
+// 62
+// 55
+// 65
+// 95
+// 102
+// 117
+// 150
+// 182
+// 127
+// 219
+// 299
+// 277
+// 309
+// 576
+// In this list, adding up all of the numbers from 15 through 40 produces the invalid number from step 1, 127. (Of course, the contiguous set of numbers in your actual list might be much longer.)
+
+// To find the encryption weakness, add together the smallest and largest number in this contiguous range; in this example, these are 15 and 47, producing 62.
+
+// What is the encryption weakness in your XMAS-encrypted list of numbers?
+
+func findContiguousSum(seq []int, invalid int) []int {
+	for i := range seq {
+		sum := 0
+		list := []int{}
+		for _, n2 := range seq[i:] {
+			list = append(list, n2)
+			sum += n2
+
+			if sum == invalid && len(list) > 1 {
+				return list
+			}
+		}
+	}
+	return []int{}
+}
+
+func globals(seq []int) (int, int) {
+	if len(seq) == 0 {
+		panic("No globals in an empty slice")
+	}
+
+	min := seq[0]
+	max := seq[0]
+
+	for _, n := range seq {
+		if n < min {
+			min = n
+		}
+
+		if n > max {
+			max = n
+		}
+	}
+
+	return min, max
+}
+
+func findWeakness(seq []int, invalid int) int {
+	vals := findContiguousSum(seq, invalid)
+	min, max := globals(vals)
+	return min + max
 }
 
 func main() {
@@ -105,5 +180,7 @@ func main() {
 		nums = append(nums, n)
 	}
 
-	fmt.Printf("Part 1: %v\n", findInvalid(nums, 25))
+	invalid := findInvalid(nums, 25)
+	fmt.Printf("Part 1: %v\n", invalid)
+	fmt.Printf("Part 2: %v\n", findWeakness(nums, invalid))
 }
